@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV Screensaver</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; cursor: none; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+  #err { position: fixed; left: 16px; bottom: 16px; color: #ffb4b4; font: 14px system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<canvas id="tv"></canvas>
+<div id="err"></div>
+<script src="player/loader.js"></script>
+<script>
+/*
+ * Full-screen screensaver. Loads scenes through the same loader (with hash checks) that
+ * the launcher uses, from this site's own manifest.json.
+ *
+ * URL parameters (all optional):
+ *   scenes=night,koi   only these scenes, in this order      tags=night   only scenes with these tags
+ *   interval=12  fade=1.6  shuffle=1  clock=0  label=0  fps=30  grain=0
+ *   exit=0       demo mode: keys don't exit; Left/Right change scene, Space pauses rotation
+ */
+(async () => {
+  const q = new URLSearchParams(location.search);
+  const num = (k, d) => (q.has(k) && !isNaN(+q.get(k)) ? +q.get(k) : d);
+  const list = k => (q.get(k) ? q.get(k).split(',').map(s => s.trim()).filter(Boolean) : null);
+  try {
+    const scenes = list('scenes');
+    await ScreensaverLoader.load('./', { scenes, verify: !!(window.crypto && crypto.subtle) });
+    const ctl = Screensaver.mount(document.getElementById('tv'), {
+      interval: num('interval', 12), fade: num('fade', 1.6), fps: num('fps', 30), grain: num('grain', 0),
+      shuffle: q.get('shuffle') === '1', clock: q.get('clock') !== '0', label: q.get('label') !== '0',
+      scenes, tags: list('tags'),
+    });
+    if (q.get('exit') === '0') {
+      addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight') ctl.next(); else if (e.key === 'ArrowLeft') ctl.prev(); else if (e.key === ' ') ctl.pause();
+      });
+      return;
+    }
+    const exit = () => {
+      try { window.ScreensaverBridge && window.ScreensaverBridge.onExit(); } catch (e) {}
+      try { if (window.parent !== window) window.parent.postMessage({ type: 'screensaver-exit' }, '*'); } catch (e) {}
+    };
+    ['keydown', 'pointerdown', 'touchstart'].forEach(ev => addEventListener(ev, exit, { passive: true }));
+  } catch (e) {
+    document.getElementById('err').textContent = e.message;
+  }
+})();
+</script>
+</body>
+</html>

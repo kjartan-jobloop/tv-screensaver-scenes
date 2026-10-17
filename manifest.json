@@ -1,0 +1,191 @@
+{
+  "schema": 1,
+  "version": "1.0.0",
+  "player": {
+    "file": "player/screensaver.js",
+    "bytes": 13601,
+    "sha256": "f652178113df097158b0124ae79e9babe6c86371e41e4924f67f180e80ca5248"
+  },
+  "loader": {
+    "file": "player/loader.js",
+    "bytes": 3148,
+    "sha256": "3ed8fc48aaf820ecc2ee5cd3a015319b4ca4d874602602585adf548192b516d4"
+  },
+  "scenes": [
+    {
+      "id": "night",
+      "name": "Night sky",
+      "tags": [
+        "night",
+        "calm"
+      ],
+      "file": "scenes/night.js",
+      "bytes": 1186,
+      "sha256": "096574912f734c319c5d5edc19ef2dfea755bdcdef887478dc55742537440757",
+      "thumb": "thumbs/night.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "bonfire",
+      "name": "Bonfire",
+      "tags": [
+        "night",
+        "nature",
+        "calm"
+      ],
+      "file": "scenes/bonfire.js",
+      "bytes": 6202,
+      "sha256": "16ba8387caf641367b82a63c8211c89cf2bf14b237d051058964fb1d8566d26d",
+      "thumb": "thumbs/bonfire.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "koi",
+      "name": "Koi pond",
+      "tags": [
+        "water",
+        "calm",
+        "nature"
+      ],
+      "file": "scenes/koi.js",
+      "bytes": 2693,
+      "sha256": "b0099f0b20d5fe596ca1c11b72734ab730dd6fb338f1b4a803776be1d13c371c",
+      "thumb": "thumbs/koi.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "whale",
+      "name": "Whale",
+      "tags": [
+        "water",
+        "calm"
+      ],
+      "file": "scenes/whale.js",
+      "bytes": 7744,
+      "sha256": "286afbd6b0b949d2ed97168105edbd318fd1e5e508ee61d3a1b0ec5612e70f92",
+      "thumb": "thumbs/whale.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "lighthouse",
+      "name": "Lighthouse",
+      "tags": [
+        "night",
+        "water",
+        "calm"
+      ],
+      "file": "scenes/lighthouse.js",
+      "bytes": 3394,
+      "sha256": "5407ebce8ecb652bb4fbfcf4188ab96ea3c6c64a47b76358a339b430c183a003",
+      "thumb": "thumbs/lighthouse.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "desert",
+      "name": "Desert night",
+      "tags": [
+        "night",
+        "calm"
+      ],
+      "file": "scenes/desert.js",
+      "bytes": 2570,
+      "sha256": "f136aa967a0008005a86f4f40630070ede03b873c16dd4348c0306a33abcc9fe",
+      "thumb": "thumbs/desert.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "jellyfish",
+      "name": "Jellyfish",
+      "tags": [
+        "water",
+        "calm"
+      ],
+      "file": "scenes/jellyfish.js",
+      "bytes": 2058,
+      "sha256": "f8dcdd26d646be2ff632f9d76117ba375a6cd7890521c7a1f18742ddde88a9bb",
+      "thumb": "thumbs/jellyfish.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "forest",
+      "name": "Firefly forest",
+      "tags": [
+        "night",
+        "nature",
+        "calm"
+      ],
+      "file": "scenes/forest.js",
+      "bytes": 3610,
+      "sha256": "1a041425d7ffb6a201071f3fa01eed0bccf3037fd72580ff1ced0e9161d67ab7",
+      "thumb": "thumbs/forest.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "sunset",
+      "name": "Sunset sea",
+      "tags": [
+        "water",
+        "calm"
+      ],
+      "file": "scenes/sunset.js",
+      "bytes": 1661,
+      "sha256": "3830bcba4466206c4994483a4a192ef9b460e3969880ef59a1c6d9684a43d282",
+      "thumb": "thumbs/sunset.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "lake",
+      "name": "Mountain lake",
+      "tags": [
+        "day",
+        "water",
+        "calm"
+      ],
+      "file": "scenes/lake.js",
+      "bytes": 3040,
+      "sha256": "e46d98451554fdabcbb3059aa365f9732ddc0214ab3bb48adeda64a5729cb4a5",
+      "thumb": "thumbs/lake.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "rays",
+      "name": "Stingrays",
+      "tags": [
+        "water",
+        "calm"
+      ],
+      "file": "scenes/rays.js",
+      "bytes": 3111,
+      "sha256": "9c9473118b9d54226d5f66988ef4ff5d7bab951a3bc0b6c30e3ec6d3cf106cf0",
+      "thumb": "thumbs/rays.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "space",
+      "name": "Solar system",
+      "tags": [
+        "night",
+        "space"
+      ],
+      "file": "scenes/space.js",
+      "bytes": 3932,
+      "sha256": "8f0a193962fb1d2a1520e8668195fae0d7bdcdf8bdf919cc80998b21f7599f50",
+      "thumb": "thumbs/space.jpg",
+      "added": "2026-10-17"
+    },
+    {
+      "id": "earthrise",
+      "name": "Earthrise",
+      "tags": [
+        "night",
+        "space",
+        "calm"
+      ],
+      "file": "scenes/earthrise.js",
+      "bytes": 5745,
+      "sha256": "3b8dad68a747b0f42865b1a6c29cbf9fd0be6d2af0e636532eaf028c9e40528c",
+      "thumb": "thumbs/earthrise.jpg",
+      "added": "2026-10-17"
+    }
+  ]
+}

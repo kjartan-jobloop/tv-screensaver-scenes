@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scene Thumbnails</title>
+<style>
+  body { margin: 0; padding: 24px 16px; background: #111318; color: #eceef3; font: 15px/1.5 system-ui, sans-serif; }
+  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; max-width: 1100px; margin: 0 auto; }
+  figure { margin: 0; } canvas { width: 100%; display: block; border-radius: 8px; }
+  figcaption { display: flex; justify-content: space-between; padding: 6px 2px; color: #9aa0ad; }
+  a { color: #eceef3; }
+  header { max-width: 1100px; margin: 0 auto 16px; }
+</style>
+</head>
+<body>
+<!--
+  Renders a 480x270 JPEG thumbnail of every scene in manifest.json, 12 seconds into the scene,
+  without the clock. Serve the repo locally (for example `npx serve .`), open
+  /tools/thumbnails.html, save each image into thumbs/<id>.jpg, then run
+  `node tools/build-manifest.js`.
+-->
+<header><h1>Scene thumbnails</h1><p>Click a link to save the thumbnail as <code>thumbs/&lt;id&gt;.jpg</code>.</p></header>
+<main id="grid"></main>
+<script src="../player/screensaver.js"></script>
+<script>
+(async () => {
+  const m = await (await fetch('../manifest.json')).json();
+  for (const s of m.scenes) await new Promise((ok, fail) => { const el = document.createElement('script'); el.src = '../' + s.file; el.onload = ok; el.onerror = fail; document.body.appendChild(el); });
+  // Drive the player by hand so every thumbnail shows the same moment, even in a background tab.
+  const queue = [], raf = window.requestAnimationFrame;
+  window.requestAnimationFrame = f => { queue.push(f); return 0; };
+  for (const s of m.scenes) {
+    const big = document.createElement('canvas'); big.style.cssText = 'position:absolute;left:-9999px;width:960px;height:540px';
+    document.body.appendChild(big);
+    const ctl = Screensaver.mount(big, { scenes: [s.id], interval: 1e9, fps: 1000, clock: false, label: false });
+    let now = performance.now();
+    for (let i = 0; i < 12 * 30; i++) { now += 1000 / 30; queue.splice(0).forEach(f => f(now)); }
+    ctl.destroy(); queue.length = 0;
+    const small = document.createElement('canvas'); small.width = 480; small.height = 270;
+    small.getContext('2d').drawImage(big, 0, 0, 480, 270); big.remove();
+    const url = small.toDataURL('image/jpeg', 0.82);
+    const fig = document.createElement('figure');
+    fig.innerHTML = `<figcaption><span>${s.name}</span><a download="${s.id}.jpg" href="${url}">${s.id}.jpg</a></figcaption>`;
+    fig.prepend(small);
+    document.getElementById('grid').appendChild(fig);
+  }
+  window.requestAnimationFrame = raf;
+})();
+</script>
+</body>
+</html>
