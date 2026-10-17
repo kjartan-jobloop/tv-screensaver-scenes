@@ -8,8 +8,8 @@
   },
   "loader": {
     "file": "player/loader.js",
-    "bytes": 3148,
-    "sha256": "3ed8fc48aaf820ecc2ee5cd3a015319b4ca4d874602602585adf548192b516d4"
+    "bytes": 3175,
+    "sha256": "a591733ce46a2031068520b3de449963b9d491ee868d327512b3c4fdc2fc014e"
   },
   "scenes": [
     {
