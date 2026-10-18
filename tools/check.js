@@ -16,6 +16,8 @@ const ctx = new Proxy({}, {
     if (k in o) return o[k];
     return (...args) => {
       if (args.some(a => typeof a === 'number' && !Number.isFinite(a))) problems.push(`${current}: ${String(k)}(${args.join(', ')})`);
+      if (k === 'getImageData') return { data: new Uint8ClampedArray(args[2] * args[3] * 4) };
+      if (k === 'createImageData') return { data: new Uint8ClampedArray(args[0] * args[1] * 4) };
       if (k === 'createLinearGradient' || k === 'createRadialGradient' || k === 'createPattern') {
         return { addColorStop(stop, col) { if (!(stop >= 0 && stop <= 1)) problems.push(`${current}: gradient stop ${stop}`); if (typeof col !== 'string' || /NaN|undefined/.test(col)) problems.push(`${current}: bad colour ${col}`); } };
       }
@@ -33,7 +35,7 @@ const sandbox = {
   window: {}, devicePixelRatio: 1, console,
   performance: { now: () => now },
   requestAnimationFrame: f => queue.push(f),
-  addEventListener() {}, document: { addEventListener() {} },
+  addEventListener() {}, document: { addEventListener() {}, createElement: () => canvas() },
 };
 sandbox.window = sandbox;
 vm.createContext(sandbox);

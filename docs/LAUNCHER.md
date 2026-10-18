@@ -7,7 +7,7 @@ The launcher reads `manifest.json` to list the scenes, lets the user pick which 
 Serve the files through jsDelivr from a **tagged release**, never from a branch:
 
 ```
-https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.0.0/
+https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.1.0/
 ```
 
 Everything is relative to that base: `manifest.json`, `player/screensaver.js`, `scenes/<id>.js`, `thumbs/<id>.jpg`.
@@ -51,6 +51,10 @@ Do this in the background (for example when settings change and once a day), nev
 `ScreensaverLoader` does steps 1 and 2 itself (it refuses files that fail the hash check). Pass `fetch` to read from the app's cache instead of the network. Hash checks need `crypto.subtle`, which WebViews only offer on `https://` pages or `localhost`. If you load from `file://` assets, verify the hashes natively when caching (step 3) and pass `verify: false`.
 
 Exit: the page calls `window.ScreensaverBridge.onExit()` on any key, click or touch (register it with `addJavascriptInterface`). Also catch keys natively, and swallow the key that wakes the screensaver so it doesn't act in the launcher. See `play.html` for a complete example.
+
+When the screensaver closes, call `destroy()` on the object `Screensaver.mount()` returned (or tear down the WebView). Riso scenes keep full-screen print canvases, and `destroy()` frees them.
+
+**Riso scenes** (tagged `riso`, from v1.1.0) make a still "print" of their background in a background Web Worker created from a `blob:` URL. If the host page has a Content Security Policy, allow `worker-src blob:`. Without it, printing falls back to the main thread in small slices, which works but is slower to appear. Until a print is ready the scene shows plain paper, then the print fades in. The player prepares the next scene a few seconds early, so this is normally invisible.
 
 **Native port.** The scenes are plain 2D canvas code and can be ported, but then new scenes need an app update, which defeats the point of this repo. Prefer the WebView.
 

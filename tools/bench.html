@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scene Benchmark</title>
+<style>
+  body { margin: 0; padding: 24px 16px; background: #111318; color: #eceef3; font: 15px/1.5 system-ui, sans-serif; }
+  table { border-collapse: collapse; margin-top: 12px; font-variant-numeric: tabular-nums; }
+  td, th { padding: 4px 14px 4px 0; text-align: left; }
+  button { font: inherit; padding: 6px 14px; }
+</style>
+</head>
+<body>
+<!--
+  Times each scene at 1920x1080: the first frame (which includes any riso print made at
+  start-up) and the median of later frames, relative to the "night" scene. Serve the repo
+  locally and open /tools/bench.html. Compare scenes to each other on the same machine;
+  the absolute numbers depend on the device.
+-->
+<h1>Scene benchmark</h1>
+<button id="run">Run</button>
+<table id="out"><tr><th>Scene</th><th>First frame</th><th>Frame</th><th>vs night</th></tr></table>
+<script src="../player/screensaver.js"></script>
+<script>
+let manifest;
+const ready = (async () => {
+  manifest = await (await fetch('../manifest.json')).json();
+  for (const s of manifest.scenes) await new Promise((ok, fail) => { const el = document.createElement('script'); el.src = '../' + s.file; el.onload = ok; el.onerror = fail; document.body.appendChild(el); });
+})();
+async function bench(ids = manifest.scenes.map(s => s.id), frames = 120) {
+  await ready;
+  const queue = [], raf = window.requestAnimationFrame;
+  window.requestAnimationFrame = f => { queue.push(f); return 0; };
+  const results = {};
+  for (const id of ['night', ...ids.filter(i => i !== 'night')]) {
+    const cv = document.createElement('canvas'); cv.style.cssText = 'position:absolute;left:-99999px;width:1920px;height:1080px';
+    document.body.appendChild(cv);
+    const t0 = performance.now();
+    const ctl = Screensaver.mount(cv, { scenes: [id], interval: 1e9, fps: 1000 });
+    let now = performance.now();
+    queue.splice(0).forEach(f => f((now += 34)));
+    cv.getContext('2d').getImageData(0, 0, 1, 1);
+    const first = performance.now() - t0, ms = [];
+    for (let i = 0; i < frames; i++) {
+      const a = performance.now(); queue.splice(0).forEach(f => f((now += 34)));
+      cv.getContext('2d').getImageData(0, 0, 1, 1); ms.push(performance.now() - a);
+    }
+    ctl.destroy(); queue.length = 0; cv.remove();
+    ms.sort((a, b) => a - b);
+    results[id] = { first: Math.round(first), frame: +ms[ms.length >> 1].toFixed(1) };
+  }
+  window.requestAnimationFrame = raf;
+  for (const id in results) results[id].vsNight = +(results[id].frame / results.night.frame).toFixed(1);
+  return results;
+}
+document.getElementById('run').onclick = async () => {
+  const r = await bench(), t = document.getElementById('out');
+  for (const [id, v] of Object.entries(r)) t.insertAdjacentHTML('beforeend', `<tr><td>${id}</td><td>${v.first} ms</td><td>${v.frame} ms</td><td>${v.vsNight}×</td></tr>`);
+};
+</script>
+</body>
+</html>

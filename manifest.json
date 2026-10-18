@@ -1,15 +1,15 @@
 {
   "schema": 1,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "player": {
     "file": "player/screensaver.js",
-    "bytes": 13601,
-    "sha256": "f652178113df097158b0124ae79e9babe6c86371e41e4924f67f180e80ca5248"
+    "bytes": 27238,
+    "sha256": "8be03757477d65c5fe6411c2fa9c2597d9db10329fab3eb567270a15fb34e9da"
   },
   "loader": {
     "file": "player/loader.js",
     "bytes": 3175,
-    "sha256": "a591733ce46a2031068520b3de449963b9d491ee868d327512b3c4fdc2fc014e"
+    "sha256": "6da5cca0b1f4fd7f93a76ad1cee0988405f2c9819fcffd503dc1ad61a6db79e1"
   },
   "scenes": [
     {
@@ -186,6 +186,121 @@
       "sha256": "3b8dad68a747b0f42865b1a6c29cbf9fd0be6d2af0e636532eaf028c9e40528c",
       "thumb": "thumbs/earthrise.jpg",
       "added": "2026-10-17"
+    },
+    {
+      "id": "train",
+      "name": "Night train",
+      "tags": [
+        "night",
+        "riso",
+        "calm"
+      ],
+      "file": "scenes/train.js",
+      "bytes": 5297,
+      "sha256": "3929bf42bf1d03950c79c214bff0a84212799f044ac21f5d784c3c6abcc91eeb",
+      "thumb": "thumbs/train.jpg",
+      "added": "2026-10-18"
+    },
+    {
+      "id": "harbour",
+      "name": "Harbour",
+      "tags": [
+        "night",
+        "water",
+        "riso",
+        "calm"
+      ],
+      "file": "scenes/harbour.js",
+      "bytes": 4555,
+      "sha256": "9634e1137a80fa0ac4d68439904164fea2adc1ba141aa2e838ebed5c20e0f1d6",
+      "thumb": "thumbs/harbour.jpg",
+      "added": "2026-10-18"
+    },
+    {
+      "id": "marbling",
+      "name": "Marbling",
+      "tags": [
+        "abstract",
+        "riso",
+        "calm"
+      ],
+      "file": "scenes/marbling.js",
+      "bytes": 3080,
+      "sha256": "e8814440c71e9a16abb01a5b08d40fedabeb7169480326e2554ff0bea557eca6",
+      "thumb": "thumbs/marbling.jpg",
+      "added": "2026-10-18"
+    },
+    {
+      "id": "moth",
+      "name": "Moth and lamp",
+      "tags": [
+        "night",
+        "riso",
+        "calm"
+      ],
+      "file": "scenes/moth.js",
+      "bytes": 3364,
+      "sha256": "ba9c7e331b859b622e7d640fe8bcfd6d6d3bdc5dc8688061673a9e7ed5f72059",
+      "thumb": "thumbs/moth.jpg",
+      "added": "2026-10-18"
+    },
+    {
+      "id": "nautilus",
+      "name": "Nautilus",
+      "tags": [
+        "abstract",
+        "riso",
+        "calm"
+      ],
+      "file": "scenes/nautilus.js",
+      "bytes": 3298,
+      "sha256": "6c71ace9add1a7624daef8ea7f44ef73238ceeee1da3fc7333069fa64d5f0ea0",
+      "thumb": "thumbs/nautilus.jpg",
+      "added": "2026-10-18"
+    },
+    {
+      "id": "rainy-window",
+      "name": "Rainy window",
+      "tags": [
+        "night",
+        "riso",
+        "calm"
+      ],
+      "file": "scenes/rainy-window.js",
+      "bytes": 3416,
+      "sha256": "bd92e44cd4ec35fa40bc71763378d0af7a35f0c2bd03732c01e0b36534faf8e4",
+      "thumb": "thumbs/rainy-window.jpg",
+      "added": "2026-10-18"
+    },
+    {
+      "id": "starlings",
+      "name": "Starlings",
+      "tags": [
+        "day",
+        "riso",
+        "nature",
+        "calm"
+      ],
+      "file": "scenes/starlings.js",
+      "bytes": 3686,
+      "sha256": "b2c87a8d480133cc294342fb1cdad10bc71df01a49f792722892ae788550e287",
+      "thumb": "thumbs/starlings.jpg",
+      "added": "2026-10-18"
+    },
+    {
+      "id": "terraces",
+      "name": "Terraces",
+      "tags": [
+        "day",
+        "riso",
+        "nature",
+        "calm"
+      ],
+      "file": "scenes/terraces.js",
+      "bytes": 3298,
+      "sha256": "8c7cce121a387c34744fae0523eb59ca2a32d12e023a6a0425fe17dac328ec6f",
+      "thumb": "thumbs/terraces.jpg",
+      "added": "2026-10-18"
     }
   ]
 }

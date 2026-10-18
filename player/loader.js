@@ -7,7 +7,7 @@
  *   Screensaver.mount(canvas, { scenes: ['night', 'whale'] });
  *
  * BASE is where the repo is served from, ending in '/', for example a pinned release:
- *   https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.0.0/
+ *   https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.1.0/
  *
  * Options:
  *   scenes   ids to load (default: every scene in the manifest)

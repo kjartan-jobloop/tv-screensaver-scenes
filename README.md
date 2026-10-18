@@ -1,6 +1,6 @@
 # TV Screensaver Scenes
 
-Silent, animated screensaver scenes for a TV launcher, drawn live in code: no images, video or sound. A TV launcher fetches the list of scenes from this repo, the user picks the ones they like in settings, and the launcher downloads, verifies and plays them.
+Silent, animated screensaver scenes for a TV launcher, drawn live in code: no images, video or sound. The scenes tagged `riso` look like risograph prints: halftone inks on paper. A TV launcher fetches the list of scenes from this repo, the user picks the ones they like in settings, and the launcher downloads, verifies and plays them.
 
 **Preview:** https://kjartan-jobloop.github.io/tv-screensaver-scenes/
 
@@ -19,14 +19,22 @@ Silent, animated screensaver scenes for a TV launcher, drawn live in code: no im
 | ![](thumbs/rays.jpg) | Stingrays | water, calm |
 | ![](thumbs/space.jpg) | Solar system | night, space |
 | ![](thumbs/earthrise.jpg) | Earthrise | night, space, calm |
+| ![](thumbs/train.jpg) | Night train | night, riso, calm |
+| ![](thumbs/starlings.jpg) | Starlings | day, riso, nature, calm |
+| ![](thumbs/harbour.jpg) | Harbour | night, water, riso, calm |
+| ![](thumbs/terraces.jpg) | Terraces | day, riso, nature, calm |
+| ![](thumbs/nautilus.jpg) | Nautilus | abstract, riso, calm |
+| ![](thumbs/marbling.jpg) | Marbling | abstract, riso, calm |
+| ![](thumbs/rainy-window.jpg) | Rainy window | night, riso, calm |
+| ![](thumbs/moth.jpg) | Moth and lamp | night, riso, calm |
 
 ## How the launcher uses it
 
 ```
-https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.0.0/manifest.json
+https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.1.0/manifest.json
 ```
 
-`manifest.json` lists every scene with its id, name, tags, thumbnail, file, size and SHA-256 hash. The launcher shows that list in its settings, downloads only the scenes that are ticked, checks each against its hash, caches it and plays it. Always load from a **tagged release** (`@v1.0.0`), so the TVs only run code that was released on purpose. See [docs/LAUNCHER.md](docs/LAUNCHER.md).
+`manifest.json` lists every scene with its id, name, tags, thumbnail, file, size and SHA-256 hash. The launcher shows that list in its settings, downloads only the scenes that are ticked, checks each against its hash, caches it and plays it. Always load from a **tagged release** (`@v1.1.0`), so the TVs only run code that was released on purpose. See [docs/LAUNCHER.md](docs/LAUNCHER.md).
 
 ## What's here
 
@@ -41,6 +49,7 @@ https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.0.0/manifes
 | `tools/build-manifest.js` | Rebuilds `manifest.json`; `--check` is run on GitHub for every push |
 | `tools/check.js` | Runs every scene for 60 simulated seconds and fails on errors |
 | `tools/thumbnails.html` | Renders the thumbnails |
+| `tools/bench.html` | Times each scene against `night` in the same browser |
 
 ## Adding scenes
 

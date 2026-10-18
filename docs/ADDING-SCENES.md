@@ -37,7 +37,19 @@ Keep to the look of the existing scenes:
 - Glows are stacked translucent discs (`g.halo`), not gradients.
 - No full-screen gradients, big radial glows or blend modes.
 - Batch many small shapes of the same colour into one path, and draw grass blades as thin triangles rather than curved strokes.
-- Aim for no more than about twice the cost of `night`. Compare them side by side in the same browser.
+- Never fill shapes whose outline crosses itself many times (for example two wavy edges bent independently). They are very costly to fill and can make the graphics process reset. Bend a centre line and offset the edges from it instead.
+- Aim for no more than about twice the cost of `night`. Measure with `tools/bench.html`, in the same browser.
+
+## Riso scenes
+
+Scenes tagged `riso` look like risograph prints: halftone dots of a few inks (`g.riso.INK`) on cream paper, overprinting each other, slightly misregistered, with grainy ink. Printing every dot each frame would be far too slow on a TV, so:
+
+1. **Print the still parts once** with `g.riso.print({ plates: [...] })`. Each plate is one ink: draw its coverage in black, using alpha for how much ink, and knock out with `destination-out`. The print is made at the screen's real pixel size in a background worker, then shown with `print.draw()`. Until it arrives the scene shows plain paper; then it fades in.
+2. **Print scrolling layers as strips** on white paper (`{ w: W, h, paper: 'white' }`) and move them with `strip.scroll(offset, y)`. Make the shapes repeat exactly over the strip width, and keep strips only as tall as their content.
+3. **Draw small moving parts live**, inside `g.riso.multiply(() => ...)`, with flat ink (`g.riso.INK.blue`), an overprint colour (`g.riso.mix(['federal'], ['pink', 0.5])`) or, for small areas only, a dot-screen tint (`g.riso.ink('teal', 0.45)`). Bright things on dark ink are knocked out first: draw them in `g.riso.PAPER`, then add ink.
+4. Set the clock colours with `overlay: { color, label, shadow: false }` in the scene definition, since white text doesn't read on paper.
+
+The player prepares the next scene's prints a few seconds before it appears, and frees a scene's prints once it is off screen.
 
 ## Helpers
 
@@ -47,5 +59,6 @@ Keep to the look of the existing scenes:
 - **Shapes:** `rect`, `dot`, `ell`, `poly`, `hill`, `ridge`, `capsule`, `blob`/`blobPath` (with `wobble`), `sparkle`, `cloud`, `puffCloud`.
 - **Light:** `halo`, `crescent` and `ball` for shaded round things.
 - **Stars:** `makeStars` and `drawStars`.
+- **Riso:** `riso.print`, `riso.ink`, `riso.mix`, `riso.multiply`, `riso.INK`, `riso.PAPER` (see above).
 
 See `player/screensaver.js`.

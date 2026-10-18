@@ -157,6 +157,210 @@
     } catch (e) { return null; }
   }
 
+  // ---- Risograph printing ---------------------------------------------------
+  // Scenes in the riso style "print" their still background once, at the screen's real pixel
+  // size: paper texture, then one halftone plate per ink (each at its own screen angle and a
+  // slight misregistration), multiplied onto the paper like real ink. Moving parts are drawn
+  // live with flat ink or dot-screen tints.
+  const INK = {
+    blue: '#0078bf', federal: '#3d5588', medium: '#3255a4', pink: '#ff48b0', yellow: '#ffe800',
+    teal: '#00838a', orange: '#ff6c2f', burgundy: '#914e72', green: '#00a95c', red: '#ff665e',
+    aqua: '#5ec8e5', purple: '#765ba7', mint: '#82d8d5', sunflower: '#ffb511', fog: '#d6d8d1',
+  };
+  const PAPER = '#f2ebdb';
+  function makeCanvas(w, h) {
+    const cv = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : document.createElement('canvas');
+    cv.width = w; cv.height = h; return cv;
+  }
+  // Stable integer hash -> [0, 1). Texture comes from fixed keys, so it never crawls.
+  function hash(x, y, s) {
+    let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+  function seedOf(str) { let h = 2166136261; for (const ch of String(str)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return h >>> 0; }
+  const rgbOf = hex => { const n = parseInt(hex.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+
+  // One shared 256x256 tile of stable noise for paper tooth, ink grain and rough edges.
+  let noiseTile = null;
+  function noise() {
+    if (!noiseTile) { noiseTile = new Uint8Array(65536); for (let i = 0; i < 65536; i++) noiseTile[i] = Math.floor(hash(i & 255, i >> 8, 9001) * 256); }
+    return noiseTile;
+  }
+
+  // The per-pixel print loop. It runs in a Web Worker when the device allows (so animation
+  // never stutters while a print is made), otherwise in time-limited slices on the main thread.
+  // It is self-contained so the worker can be built from its source with .toString().
+  function printRows(j, y0, y1) {
+    const BW = j.BW, BH = j.BH, plates = j.plates, d = j.d, N = j.N, white = j.white;
+    const p0 = j.paper[0], p1 = j.paper[1], p2 = j.paper[2];
+    for (let y = y0; y < y1; y++) {
+      const ny = (y & 255) << 8;
+      for (let x = 0; x < BW; x++) {
+        const o = (y * BW + x) * 4;
+        let r = p0, gg = p1, b = p2;
+        if (!white) {
+          const n = N[ny | (x & 255)];                                     // paper tooth
+          r += (n - 128) * 0.028; gg += (n - 128) * 0.028; b += (n - 128) * 0.032;
+          if (n < 1) { r -= 18; gg -= 18; b -= 16; }                        // fibres
+        }
+        for (let q = 0; q < plates.length; q++) {
+          const P = plates[q], sx = x - P.dx, sy = y - P.dy;
+          if (sx < 0 || sy < 0 || sx >= BW || sy >= BH) continue;
+          const cov0 = P.a[(sy >> 1) * P.cw + (sx >> 1)]; if (!cov0) continue;
+          // Position inside this plate's rotated dot screen (the offset keeps it positive).
+          const u = (sx * P.cos + sy * P.sin) * P.ip + 4096, v = (sy * P.cos - sx * P.sin) * P.ip + 4096;
+          const cu = u | 0, cv = v | 0, fu = u - cu - 0.5, fv = v - cv - 0.5;
+          // Grainy ink: each dot gets a little more or less ink than its neighbours.
+          const cq = Math.min(255, (cov0 * P.gLUT[N[((cu & 255) << 8) | (cv & 255)]]) >> 8);
+          let a = 0.5 + (P.r2[cq] - (fu * fu + fv * fv)) * P.k2[cq];
+          if (a <= 0) continue; if (a > 1) a = 1;
+          if (N[(((y + P.off) & 255) << 8) | ((x + P.off) & 255)] < 13) a *= 0.55;   // rough ink
+          r *= 1 - a * P.k[0]; gg *= 1 - a * P.k[1]; b *= 1 - a * P.k[2];
+        }
+        d[o] = r; d[o + 1] = gg; d[o + 2] = b; d[o + 3] = 255;
+      }
+    }
+  }
+  let printWorker = null, workerTried = false, jobSeq = 0;
+  const workerJobs = new Map();
+  function getWorker(onBroken) {
+    if (workerTried) return printWorker;
+    workerTried = true;
+    try {
+      if (typeof Worker === 'undefined' || typeof Blob === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) return null;
+      const src = printRows.toString() +
+        '\nonmessage = e => { const j = e.data; j.d = new Uint8ClampedArray(j.BW * j.BH * 4); printRows(j, 0, j.BH); postMessage({ id: j.id, d: j.d }, [j.d.buffer]); };';
+      printWorker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+      printWorker.onmessage = e => { const cb = workerJobs.get(e.data.id); workerJobs.delete(e.data.id); if (cb) cb(e.data.d); };
+      printWorker.onerror = () => { printWorker = null; workerJobs.clear(); onBroken(); };   // e.g. blocked by a CSP
+    } catch (e) { printWorker = null; }
+    return printWorker;
+  }
+
+  function risoKit(c, g, view) {
+    const bakes = [], tints = new Map();
+    const pitch = () => Math.max(3.5, 2.3 * view.scale);
+    const inkHex = name => INK[name] || name;
+    const restartWorkerJobs = () => { for (const b of bakes) if (b.job && b.job.worker) b.start(); };
+
+    function print(spec) {
+      const h = { owner: g._owner, canvas: null, ready: false, job: null, scale: 0, gen: 0, readyAt: 0 };
+      // spec.w / spec.h: logical size of the print (default the whole screen). A strip wider than
+      // the screen can be scrolled with h.scroll(). paper: 'white' prints on plain white with no
+      // texture, for layers that are multiplied over another print.
+      const LW = spec.w || W, LH = spec.h || H, white = spec.paper === 'white';
+      const paperHex = white ? '#ffffff' : spec.paper || PAPER;
+      h.start = () => {
+        const s = view.scale, BW = Math.ceil(LW * s), BH = Math.ceil(LH * s), seed = seedOf(spec.seed || h.owner || 'print');
+        h.scale = s; h.ready = false; const gen = ++h.gen;
+        const plates = spec.plates.map((pl, k) => {
+          // Coverage is drawn at half resolution (the dots themselves are full resolution).
+          const CW = Math.ceil(BW / 2), CH = Math.ceil(BH / 2), cv = makeCanvas(CW, CH), x = cv.getContext('2d');
+          x.setTransform(s / 2, 0, 0, s / 2, 0, 0); x.fillStyle = '#000'; x.strokeStyle = '#000';
+          pl.draw(helpers(x));                        // draw coverage: alpha = how much ink
+          const src = x.getImageData(0, 0, CW, CH).data, a = new Uint8Array(CW * CH);
+          for (let i = 0; i < a.length; i++) a[i] = src[i * 4 + 3];
+          cv.width = cv.height = 0;
+          const th = ((pl.angle || 0) * Math.PI) / 180, ink = rgbOf(inkHex(pl.ink)), p = pitch() * (pl.pitch || 1);
+          const grain = pl.grain === undefined ? 0.2 : pl.grain;
+          // Lookup tables by coverage (0-255): squared dot radius in screen cells, and the
+          // anti-aliasing slope, so the per-pixel loop needs no square roots.
+          const r2 = new Float32Array(256), k2 = new Float32Array(256), gLUT = new Uint16Array(256);
+          for (let i = 0; i < 256; i++) {
+            const cv = i / 255, rr = 0.3136 * cv + (cv > 0.85 ? (cv - 0.85) * 2 : 0);
+            r2[i] = rr; k2[i] = p / (2 * Math.sqrt(rr) + 1e-3);
+            gLUT[i] = Math.min(65535, Math.round(256 * (1 - grain * 0.5 + grain * (i / 255))));
+          }
+          return {
+            a, cw: CW, cos: Math.cos(th), sin: Math.sin(th), ip: 1 / p, r2, k2, gLUT, off: (seed + k * 97) & 255,
+            dx: Math.round((pl.shift ? pl.shift[0] : 0) * s), dy: Math.round((pl.shift ? pl.shift[1] : 0) * s),
+            k: ink.map(v => 1 - v / 255),
+          };
+        });
+        h.canvas = makeCanvas(BW, BH);
+        const hx = h.canvas.getContext('2d');
+        const job = { BW, BH, plates, paper: rgbOf(paperHex), white, N: noise() };
+        const finish = data => {
+          if (gen !== h.gen) return;                  // freed or restarted meanwhile
+          const img = hx.createImageData(BW, BH); img.data.set(data); hx.putImageData(img, 0, 0);
+          h.ready = true; h.job = null; h.readyAt = performance.now();
+        };
+        const w = getWorker(restartWorkerJobs);
+        if (w) {
+          const id = ++jobSeq; workerJobs.set(id, finish); h.job = { worker: true };
+          w.postMessage(Object.assign({ id }, job), plates.map(p => p.a.buffer));
+        } else {
+          job.d = new Uint8ClampedArray(BW * BH * 4); job.y = 0; job.finish = finish; h.job = job;
+        }
+      };
+      h.step = budget => {
+        const j = h.job; if (!j || j.worker) return;
+        const t0 = performance.now();
+        while (j.y < j.BH) { const y1 = Math.min(j.BH, j.y + 8); printRows(j, j.y, y1); j.y = y1; if (performance.now() - t0 > budget) break; }
+        if (j.y >= j.BH) j.finish(j.d);
+      };
+      h.free = () => { h.gen++; if (h.canvas) h.canvas.width = h.canvas.height = 0; h.canvas = null; h.job = null; h.ready = false; h.scale = 0; };
+      // Draw at logical (x, y), pixel-aligned so the dots are never resampled.
+      // multiply: true for layers printed on 'white' paper. Until a print is ready, a paper print
+      // shows plain paper; when it arrives it fades in over 0.6 s.
+      h.draw = (x = 0, y = 0, multiply = white) => {
+        if (h.scale !== view.scale || (!h.ready && !h.job)) h.start();
+        if (!h.ready && h.job && !h.job.worker) h.step(Infinity);
+        if (!h.ready) { if (!white) { c.fillStyle = paperHex; c.fillRect(x, y, LW, LH); } return; }
+        const k = Math.min(1, (performance.now() - h.readyAt) / 600);
+        const px = Math.round(view.offX + x * view.scale), py = Math.round(view.offY + y * view.scale);
+        c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+        if (k < 1 && !white) { c.fillStyle = paperHex; c.fillRect(px, py, h.canvas.width, h.canvas.height); }
+        if (k < 1) c.globalAlpha *= k;
+        if (multiply) c.globalCompositeOperation = 'multiply';
+        c.drawImage(h.canvas, px, py);
+        c.restore();
+      };
+      // Draw a wide strip scrolled left by `offset` logical px, wrapping round.
+      h.scroll = (offset, y = 0, multiply = white) => {
+        const x0 = -(((offset % LW) + LW) % LW);
+        h.draw(x0, y, multiply);
+        if (x0 + LW < W) h.draw(x0 + LW, y, multiply);
+      };
+      bakes.push(h); h.start();
+      return h;
+    }
+    // Flat ink, or a dot-screen tint for coverage below 1. Draw it inside multiply().
+    function ink(name, cov = 1) {
+      const hex = inkHex(name);
+      if (cov >= 0.97) return hex;
+      const s = view.scale, p = Math.round(pitch()), key = `${hex}|${cov.toFixed(2)}|${p}|${s}`;
+      if (!tints.has(key)) {
+        let fill = hex;
+        try {
+          const t = makeCanvas(p, p), x = t.getContext('2d');
+          x.fillStyle = hex; x.beginPath(); x.arc(p / 2, p / 2, Math.max(0.6, 0.56 * Math.sqrt(cov) * p), 0, TAU); x.fill();
+          const pat = c.createPattern(t, 'repeat');
+          if (pat && pat.setTransform && typeof DOMMatrix !== 'undefined') pat.setTransform(new DOMMatrix([1 / s, 0, 0, 1 / s, 0, 0]));
+          if (pat) fill = pat;
+        } catch (e) { /* no offscreen canvas: fall back to flat ink */ }
+        tints.set(key, fill);
+      }
+      return tints.get(key);
+    }
+    // Flat colour that matches an overprint of inks at given coverages, e.g. mix(['federal', .8], ['pink', .5]).
+    // Cheaper than dot-screen tints for large moving shapes; draw it inside multiply().
+    function mix(...layers) {
+      let r = 1, gg = 1, b = 1;
+      for (const [name, cov = 1] of layers) { const [ir, ig, ib] = rgbOf(inkHex(name)); r *= 1 - cov * (1 - ir / 255); gg *= 1 - cov * (1 - ig / 255); b *= 1 - cov * (1 - ib / 255); }
+      return `rgb(${Math.round(r * 255)},${Math.round(gg * 255)},${Math.round(b * 255)})`;
+    }
+    return {
+      INK, PAPER, print, ink, mix, hash, seedOf,
+      multiply(fn) { c.save(); c.globalCompositeOperation = 'multiply'; fn(); c.restore(); },
+      // Advance unfinished prints for up to `budget` ms (called by the player every frame).
+      work(budget) { const h = bakes.find(b => b.job); if (h) h.step(budget); },
+      prepare(owner) { for (const b of bakes) if (b.owner === owner && !b.ready && !b.job) b.start(); },
+      release(keep) { for (const b of bakes) if (!keep.includes(b.owner) && b.canvas) b.free(); },
+    };
+  }
+
   function select(ids, tags) {
     let list = registry.slice();
     if (ids && ids.length) list = ids.map(id => registry.find(s => s.id === id)).filter(Boolean);
@@ -168,13 +372,16 @@
     const o = Object.assign({ interval: 12, fade: 1.6, shuffle: false, clock: true, label: true, fps: 30, scenes: null, tags: null, grain: 0 }, opts || {});
     const c = canvas.getContext('2d');
     const g = helpers(c);
+    const view = { scale: 1, offX: 0, offY: 0 };
+    g.riso = risoKit(c, g, view);
     const grain = makeGrain(c);
     const order = select(o.scenes, o.tags);
     if (o.shuffle) order.sort(() => Math.random() - 0.5);
     const live = new Map();                      // scene id -> draw function (created lazily, kept)
-    const drawOf = s => { if (!live.has(s.id)) live.set(s.id, s.create(g)); return live.get(s.id); };
+    const drawOf = s => { if (!live.has(s.id)) { g._owner = s.id; live.set(s.id, s.create(g)); g._owner = null; } return live.get(s.id); };
 
     let cur = 0, prev = -1, fadeT = 0, since = 0, t = 0, acc = 0, paused = false, stopped = false;
+    let upcoming = -1;                           // chosen in advance so its print can be prepared
     let last = performance.now();
     let scale = 1, offX = 0, offY = 0;
 
@@ -184,6 +391,7 @@
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
       scale = Math.max(canvas.width / W, canvas.height / H);
       offX = (canvas.width - W * scale) / 2; offY = (canvas.height - H * scale) / 2;
+      view.scale = scale; view.offX = offX; view.offY = offY;
     }
     resize();
     let ro = null;
@@ -193,7 +401,9 @@
     function go(n) {
       if (order.length < 2) return;
       prev = cur; cur = ((n % order.length) + order.length) % order.length; fadeT = 0; since = 0;
+      upcoming = -1; released = false;
     }
+    let released = true;
     function nextIndex() {
       if (!o.shuffle || order.length < 3) return cur + 1;
       let n; do { n = Math.floor(Math.random() * order.length); } while (n === cur);
@@ -201,23 +411,27 @@
     }
 
     function overlay() {
-      // A soft shadow keeps white text readable on bright day scenes.
+      // White text with a soft shadow by default; a scene can ask for ink-coloured text instead
+      // (overlay: { color: '#3d5588', label: '#914e72', shadow: false }), which reads better on paper.
+      const ov = order[cur].overlay || {}, ink = ov.color || '#ffffff';
       c.save();
-      c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 10; c.shadowOffsetY = 1;
+      if (ov.shadow !== false) { c.shadowColor = 'rgba(0,0,0,.45)'; c.shadowBlur = 10; c.shadowOffsetY = 1; }
+      c.fillStyle = ink;
+      const a0 = c.globalAlpha;
       // The clock drifts slowly so nothing sits still on OLED panels.
       if (o.clock) {
         const d = new Date(), cx = W - 180 + 30 * Math.sin(t * 0.05), cy = 80 + 15 * Math.sin(t * 0.07);
         c.textAlign = 'center';
-        c.fillStyle = 'rgba(255,255,255,.92)'; c.font = '500 56px sans-serif';
+        c.globalAlpha = a0 * 0.92; c.font = '500 56px sans-serif';
         c.fillText(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), cx, cy);
-        c.fillStyle = 'rgba(255,255,255,.78)'; c.font = '22px sans-serif';
+        c.globalAlpha = a0 * 0.78; c.font = '22px sans-serif';
         c.fillText(d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }), cx, cy + 32);
       }
       if (o.label) {
-        c.textAlign = 'left'; c.font = '20px sans-serif'; c.fillStyle = 'rgba(255,255,255,.78)';
+        c.textAlign = 'left'; c.font = '20px sans-serif'; c.globalAlpha = a0 * 0.78; c.fillStyle = ov.label || ink;
         c.fillText(order[cur].name, 32, H - 30);
         const n = order.length, gap = n > 12 ? 14 : 20;
-        for (let i = 0; i < n; i++) g.dot(W - 40 - (n - 1 - i) * gap, H - 37, i === cur ? 6 : 4, i === cur ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.4)');
+        for (let i = 0; i < n; i++) { c.globalAlpha = a0 * (i === cur ? 0.9 : 0.4); g.dot(W - 40 - (n - 1 - i) * gap, H - 37, i === cur ? 6 : 4, ov.label || ink); }
       }
       c.restore();
     }
@@ -229,7 +443,14 @@
       if (acc < 1 / o.fps - 0.002) return;       // frame cap
       const dt = Math.min(0.1, acc); acc = 0; t += dt;
 
-      if (!paused) { since += dt; if (since > o.interval) go(nextIndex()); }
+      if (!paused) { since += dt; if (since > o.interval) go(upcoming >= 0 ? upcoming : nextIndex()); }
+      // A few seconds before the switch, create the next scene so its print can be made in slices.
+      if (order.length > 1 && !paused && since > o.interval - Math.max(4, o.interval * 0.5)) {
+        if (upcoming < 0) upcoming = ((nextIndex() % order.length) + order.length) % order.length;
+        const nx = order[upcoming];
+        if (!live.has(nx.id)) drawOf(nx); else g.riso.prepare(nx.id);
+      }
+      g.riso.work(o.printBudget || 6);
 
       c.setTransform(1, 0, 0, 1, 0, 0); c.globalAlpha = 1;
       c.fillStyle = '#000'; c.fillRect(0, 0, canvas.width, canvas.height);
@@ -243,6 +464,8 @@
       } else {
         prev = -1;
         drawOf(order[cur])(t, dt);
+        // Once the crossfade is over, free the prints of scenes that are off screen.
+        if (!released) { released = true; g.riso.release([order[cur].id, upcoming >= 0 ? order[upcoming].id : null]); }
       }
       // Fine paper grain over everything gives the flat shapes a printed, hand-made feel.
       if (grain && o.grain > 0) {
@@ -267,7 +490,8 @@
       set: (key, value) => { o[key] = value; },   // e.g. set('clock', false), set('interval', 20)
       pause: p => { paused = p === undefined ? !paused : !!p; return paused; },
       get scene() { return order[cur]; },
-      destroy() { stopped = true; if (ro) ro.disconnect(); },
+      // Stop, and free every print this player made (they hold full-screen canvases).
+      destroy() { stopped = true; if (ro) ro.disconnect(); g.riso.release([]); },
     };
   }
 
