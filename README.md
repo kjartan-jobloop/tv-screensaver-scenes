@@ -38,10 +38,10 @@ Silent, animated screensaver scenes for a TV launcher, drawn live in code: no im
 ## How the launcher uses it
 
 ```
-https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.2.0/manifest.json
+https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.2.1/manifest.json
 ```
 
-`manifest.json` lists every scene with its id, name, tags, thumbnail, file, size and SHA-256 hash. The launcher shows that list in its settings, downloads only the scenes that are ticked, checks each against its hash, caches it and plays it. Always load from a **tagged release** (`@v1.2.0`), so the TVs only run code that was released on purpose. See [docs/LAUNCHER.md](docs/LAUNCHER.md).
+`manifest.json` lists every scene with its id, name, tags, thumbnail, file, size and SHA-256 hash. The launcher shows that list in its settings, downloads only the scenes that are ticked, checks each against its hash, caches it and plays it. Always load from a **tagged release** (`@v1.2.1`), so the TVs only run code that was released on purpose. See [docs/LAUNCHER.md](docs/LAUNCHER.md).
 
 ## What's here
 

@@ -51,13 +51,15 @@ const scenes = orderedIds.map(id => {
   return Object.assign({ id, name: def.name || id, tags: def.tags || [] }, fileEntry(`scenes/${id}.js`), { thumb, added: prev.added || today });
 });
 
-// The player's API (Screensaver.register / mount and the `g` helpers scenes rely on). Launchers
-// refuse a manifest whose playerAPI they don't support; bump it only for a breaking change.
-const PLAYER_API = 1;
+// The scene API: what scenes need from the player (Screensaver.register / mount and the `g`
+// helpers). 1 = the original helpers (v1.0.0); 2 = adds g.riso (v1.1.0) and g.pixel (v1.2.0).
+// Launchers that ship their own player refuse a manifest whose playerApi they don't implement,
+// so bump it whenever scenes start to rely on a new helper.
+const PLAYER_API = 2;
 
 const manifest = {
   schema: 1,
-  playerAPI: PLAYER_API,
+  playerApi: PLAYER_API,
   version: vi >= 0 ? args[vi + 1] : old.version || '1.0.0',
   player: fileEntry('player/screensaver.js'),
   loader: fileEntry('player/loader.js'),

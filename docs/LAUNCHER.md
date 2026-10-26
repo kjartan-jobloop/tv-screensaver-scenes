@@ -7,7 +7,7 @@ The launcher reads `manifest.json` to list the scenes, lets the user pick which 
 Serve the files through jsDelivr from a **tagged release**, never from a branch:
 
 ```
-https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.2.0/
+https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.2.1/
 ```
 
 Everything is relative to that base: `manifest.json`, `player/screensaver.js`, `scenes/<id>.js`, `thumbs/<id>.jpg`.
@@ -65,7 +65,7 @@ When the screensaver closes, call `destroy()` on the object `Screensaver.mount()
 ```json
 {
   "schema": 1,
-  "playerAPI": 1,
+  "playerApi": 2,
   "version": "1.2.0",
   "player": { "file": "player/screensaver.js", "bytes": 13601, "sha256": "…" },
   "loader": { "file": "player/loader.js", "bytes": 3148, "sha256": "…" },
@@ -83,7 +83,7 @@ When the screensaver closes, call `destroy()` on the object `Screensaver.mount()
 - The order of `scenes` is the suggested playlist order.
 - A scene removed from the manifest should be dropped from the user's selection and the cache.
 - Ignore fields you don't know; if `schema` is not 1, keep using the cached version and show nothing new.
-- `playerAPI` is the version of the player's API that scenes are written against (`Screensaver.register`, `Screensaver.mount` and the drawing helpers). It only goes up for a breaking change. A launcher should accept the manifests whose `playerAPI` it supports and otherwise keep the cached version. Manifests from v1.2.0 on declare it; v1.0.0 and v1.1.0 predate it and have the same API as `playerAPI: 1`.
+- `playerApi` is the scene API: what the scenes need from the player (`Screensaver.register`, `Screensaver.mount` and the `g` helpers). `1` is the original helpers; `2` adds `g.riso` and `g.pixel`. It goes up whenever scenes start to rely on a new helper. A launcher that bundles its own player must implement that API (copy `player/screensaver.js`, or merge its helpers into yours) and should keep the cached version when it sees a higher number. Manifests from v1.2.1 on declare it. Older releases don't: v1.0.0 needs API 1; v1.1.0 and v1.2.0 need API 2 (v1.2.0 has a misspelled `playerAPI: 1`, which is wrong and should be ignored).
 
 ## Requirements the launcher should meet
 
