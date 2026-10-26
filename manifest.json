@@ -1,6 +1,7 @@
 {
   "schema": 1,
-  "version": "1.1.0",
+  "playerAPI": 1,
+  "version": "1.2.0",
   "player": {
     "file": "player/screensaver.js",
     "bytes": 36876,

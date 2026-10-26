@@ -51,8 +51,13 @@ const scenes = orderedIds.map(id => {
   return Object.assign({ id, name: def.name || id, tags: def.tags || [] }, fileEntry(`scenes/${id}.js`), { thumb, added: prev.added || today });
 });
 
+// The player's API (Screensaver.register / mount and the `g` helpers scenes rely on). Launchers
+// refuse a manifest whose playerAPI they don't support; bump it only for a breaking change.
+const PLAYER_API = 1;
+
 const manifest = {
   schema: 1,
+  playerAPI: PLAYER_API,
   version: vi >= 0 ? args[vi + 1] : old.version || '1.0.0',
   player: fileEntry('player/screensaver.js'),
   loader: fileEntry('player/loader.js'),

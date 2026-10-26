@@ -7,7 +7,7 @@ The launcher reads `manifest.json` to list the scenes, lets the user pick which 
 Serve the files through jsDelivr from a **tagged release**, never from a branch:
 
 ```
-https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.1.0/
+https://cdn.jsdelivr.net/gh/kjartan-jobloop/tv-screensaver-scenes@v1.2.0/
 ```
 
 Everything is relative to that base: `manifest.json`, `player/screensaver.js`, `scenes/<id>.js`, `thumbs/<id>.jpg`.
@@ -65,7 +65,8 @@ When the screensaver closes, call `destroy()` on the object `Screensaver.mount()
 ```json
 {
   "schema": 1,
-  "version": "1.0.0",
+  "playerAPI": 1,
+  "version": "1.2.0",
   "player": { "file": "player/screensaver.js", "bytes": 13601, "sha256": "…" },
   "loader": { "file": "player/loader.js", "bytes": 3148, "sha256": "…" },
   "scenes": [
@@ -82,6 +83,7 @@ When the screensaver closes, call `destroy()` on the object `Screensaver.mount()
 - The order of `scenes` is the suggested playlist order.
 - A scene removed from the manifest should be dropped from the user's selection and the cache.
 - Ignore fields you don't know; if `schema` is not 1, keep using the cached version and show nothing new.
+- `playerAPI` is the version of the player's API that scenes are written against (`Screensaver.register`, `Screensaver.mount` and the drawing helpers). It only goes up for a breaking change. A launcher should accept the manifests whose `playerAPI` it supports and otherwise keep the cached version. Manifests from v1.2.0 on declare it; v1.0.0 and v1.1.0 predate it and have the same API as `playerAPI: 1`.
 
 ## Requirements the launcher should meet
 
