@@ -1,6 +1,6 @@
 # TV Screensaver Scenes
 
-Silent, animated screensaver scenes for a TV launcher, drawn live in code: no images, video or sound. The scenes tagged `riso` look like risograph prints: halftone inks on paper. A TV launcher fetches the list of scenes from this repo, the user picks the ones they like in settings, and the launcher downloads, verifies and plays them.
+Silent, animated screensaver scenes for a TV launcher, drawn live in code: no images, video or sound. The scenes tagged `riso` look like risograph prints: halftone inks on paper. The scenes tagged `pixel` are pixel art: a small, hand-placed picture with a limited palette and dithered shading, scaled up crisply. A TV launcher fetches the list of scenes from this repo, the user picks the ones they like in settings, and the launcher downloads, verifies and plays them.
 
 **Preview:** https://kjartan-jobloop.github.io/tv-screensaver-scenes/
 
@@ -27,6 +27,13 @@ Silent, animated screensaver scenes for a TV launcher, drawn live in code: no im
 | ![](thumbs/marbling.jpg) | Marbling | abstract, riso, calm |
 | ![](thumbs/rainy-window.jpg) | Rainy window | night, riso, calm |
 | ![](thumbs/moth.jpg) | Moth and lamp | night, riso, calm |
+| ![](thumbs/snow-lamp.jpg) | Snowy lamp | night, pixel, calm |
+| ![](thumbs/blossom-canal.jpg) | Blossom canal | day, water, pixel, calm |
+| ![](thumbs/golden-hour.jpg) | Golden hour | day, pixel, calm |
+| ![](thumbs/night-desk.jpg) | Night desk | night, pixel, calm |
+| ![](thumbs/ember-field.jpg) | Ember field | nature, pixel, calm |
+| ![](thumbs/snow-cabin.jpg) | Snow cabin | night, nature, water, pixel, calm |
+| ![](thumbs/chick.jpg) | Little chick | day, pixel, calm |
 
 ## How the launcher uses it
 

@@ -3,8 +3,8 @@
   "version": "1.1.0",
   "player": {
     "file": "player/screensaver.js",
-    "bytes": 27238,
-    "sha256": "8be03757477d65c5fe6411c2fa9c2597d9db10329fab3eb567270a15fb34e9da"
+    "bytes": 36876,
+    "sha256": "9c6dd8658855567333896aa7c1d1b42ecf0e9da3fb73e05e5c1e35b128338177"
   },
   "loader": {
     "file": "player/loader.js",
@@ -301,6 +301,107 @@
       "sha256": "8c7cce121a387c34744fae0523eb59ca2a32d12e023a6a0425fe17dac328ec6f",
       "thumb": "thumbs/terraces.jpg",
       "added": "2026-10-18"
+    },
+    {
+      "id": "snow-lamp",
+      "name": "Snowy lamp",
+      "tags": [
+        "night",
+        "pixel",
+        "calm"
+      ],
+      "file": "scenes/snow-lamp.js",
+      "bytes": 5445,
+      "sha256": "504a8627690f26e8cea43fa7511c5fbc421117de656c4850bcf07ac64c823d6d",
+      "thumb": "thumbs/snow-lamp.jpg",
+      "added": "2026-10-26"
+    },
+    {
+      "id": "blossom-canal",
+      "name": "Blossom canal",
+      "tags": [
+        "day",
+        "water",
+        "pixel",
+        "calm"
+      ],
+      "file": "scenes/blossom-canal.js",
+      "bytes": 9098,
+      "sha256": "8f73b2ff9d866934fd1a4cb07e9fa8ff56df39ff4921797e2e8439d2fb3d6e27",
+      "thumb": "thumbs/blossom-canal.jpg",
+      "added": "2026-10-26"
+    },
+    {
+      "id": "golden-hour",
+      "name": "Golden hour",
+      "tags": [
+        "day",
+        "pixel",
+        "calm"
+      ],
+      "file": "scenes/golden-hour.js",
+      "bytes": 7550,
+      "sha256": "a868d42e82ba3b98d08267866e6cba1f655834c101a9d73cfa14e8f8d644ef92",
+      "thumb": "thumbs/golden-hour.jpg",
+      "added": "2026-10-26"
+    },
+    {
+      "id": "night-desk",
+      "name": "Night desk",
+      "tags": [
+        "night",
+        "pixel",
+        "calm"
+      ],
+      "file": "scenes/night-desk.js",
+      "bytes": 7898,
+      "sha256": "56e6a5b66d3f7a129a71532aee0474c5595a0ce805180b8b52dece40cb22d24c",
+      "thumb": "thumbs/night-desk.jpg",
+      "added": "2026-10-26"
+    },
+    {
+      "id": "ember-field",
+      "name": "Ember field",
+      "tags": [
+        "nature",
+        "pixel",
+        "calm"
+      ],
+      "file": "scenes/ember-field.js",
+      "bytes": 4775,
+      "sha256": "5f7bfbc8e967451d134e540572e334e4d1dd27a54e04bc8e2ec74f69261d0f5b",
+      "thumb": "thumbs/ember-field.jpg",
+      "added": "2026-10-26"
+    },
+    {
+      "id": "snow-cabin",
+      "name": "Snow cabin",
+      "tags": [
+        "night",
+        "nature",
+        "water",
+        "pixel",
+        "calm"
+      ],
+      "file": "scenes/snow-cabin.js",
+      "bytes": 5710,
+      "sha256": "03f5f0fa5cbd791508215b6dff2ea5b203b6d57b0cde14b9db37a9b37d62abbc",
+      "thumb": "thumbs/snow-cabin.jpg",
+      "added": "2026-10-26"
+    },
+    {
+      "id": "chick",
+      "name": "Little chick",
+      "tags": [
+        "day",
+        "pixel",
+        "calm"
+      ],
+      "file": "scenes/chick.js",
+      "bytes": 4217,
+      "sha256": "364e33592aa4cbc444fc2d7969d1d602d17bb574000da316dd5fa029cf523acb",
+      "thumb": "thumbs/chick.jpg",
+      "added": "2026-10-26"
     }
   ]
 }

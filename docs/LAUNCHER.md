@@ -54,6 +54,8 @@ Exit: the page calls `window.ScreensaverBridge.onExit()` on any key, click or to
 
 When the screensaver closes, call `destroy()` on the object `Screensaver.mount()` returned (or tear down the WebView). Riso scenes keep full-screen print canvases, and `destroy()` frees them.
 
+**Pixel scenes** (tagged `pixel`, from v1.2.0) draw into small in-memory canvases and need nothing from the host.
+
 **Riso scenes** (tagged `riso`, from v1.1.0) make a still "print" of their background in a background Web Worker created from a `blob:` URL. If the host page has a Content Security Policy, allow `worker-src blob:`. Without it, printing falls back to the main thread in small slices, which works but is slower to appear. Until a print is ready the scene shows plain paper, then the print fades in. The player prepares the next scene a few seconds early, so this is normally invisible.
 
 **Native port.** The scenes are plain 2D canvas code and can be ported, but then new scenes need an app update, which defeats the point of this repo. Prefer the WebView.

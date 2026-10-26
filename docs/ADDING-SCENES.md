@@ -51,6 +51,23 @@ Scenes tagged `riso` look like risograph prints: halftone dots of a few inks (`g
 
 The player prepares the next scene's prints a few seconds before it appears, and frees a scene's prints once it is off screen.
 
+## Pixel scenes
+
+Scenes tagged `pixel` are pixel art: a small picture of real pixels (usually 320 × 180, so each one is 6 × 6 on a 1080p TV) with a fixed palette and no anti-aliasing, scaled up crisply. They keep to the look of hand-made pixel art:
+
+- A limited palette per scene, with shading in a few flat steps. Blend between steps with ordered (Bayer) dithering, not smooth gradients: `vgrad` for skies, `rect(..., k)` and `light()` for tints and pools of light.
+- A detailed still picture, with only a few small things moving: snow, rain, petals or leaves, swaying grass or foliage, blinking lights, lit windows switching, a passing tram or car, an animal that blinks and looks about.
+- Motion steps in whole pixels, and swaying parts update about 6 times a second rather than every frame, the way pixel animations are drawn.
+
+How to draw one:
+
+1. Make two buffers: `const bg = g.pixel.buffer(320, 180), fr = g.pixel.buffer(320, 180)`.
+2. Draw the still picture into `bg` once in `create()`, with `rect`, `span`, `poly`, `disc`, `line`, `sprite` (character art with a palette), `vgrad`, `light` and the per-pixel `paint`. `g.pixel.fbm`, `g.pixel.noise` and `g.pixel.rng(seed)` give clouds, textures and layouts that look the same every time.
+3. Each frame: `fr.copy(bg)`, draw the moving parts into `fr`, then `fr.show()`. For reflections or a drifting sky, keep another buffer and copy rows from it with `band()`, or directly through `px`.
+4. To change part of the still picture, such as a window switching on, draw it into `bg` again.
+
+Copying a 320 × 180 buffer and showing it costs about the same as drawing `night`. Baking in `create()` happens once, a few seconds before the scene appears, so keep it to a few hundred thousand noise calls.
+
 ## Helpers
 
 `g` gives you:
@@ -60,5 +77,6 @@ The player prepares the next scene's prints a few seconds before it appears, and
 - **Light:** `halo`, `crescent` and `ball` for shaded round things.
 - **Stars:** `makeStars` and `drawStars`.
 - **Riso:** `riso.print`, `riso.ink`, `riso.mix`, `riso.multiply`, `riso.INK`, `riso.PAPER` (see above).
+- **Pixel:** `pixel.buffer`, `pixel.rng`, `pixel.noise`, `pixel.fbm`, `pixel.dith`, `pixel.mix`, `pixel.blend`, `pixel.pack` (see above).
 
 See `player/screensaver.js`.

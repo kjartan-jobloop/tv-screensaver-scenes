@@ -361,6 +361,163 @@
     };
   }
 
+  // ---- Pixel art --------------------------------------------------------------
+  // Scenes tagged `pixel` draw real pixels into a small buffer (for example 320x180) with a fixed
+  // palette and integer coordinates, then show it scaled up with no smoothing. The still picture
+  // is baked once into one buffer; each frame copies it into another and adds the moving parts.
+  // Pixels are stored as packed 0xAABBGGRR, the byte order ImageData uses on little-endian devices.
+  const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + 0.5) / 16);
+  const packCache = new Map();
+  function pack(col) {
+    if (typeof col === 'number') return col;
+    let v = packCache.get(col);
+    if (v === undefined) { const [r, gg, b] = rgbOf(col); v = ((255 << 24) | (b << 16) | (gg << 8) | r) >>> 0; packCache.set(col, v); }
+    return v;
+  }
+  function mixPacked(a, b, k) {
+    const m = (s) => { const x = (a >>> s) & 255; return Math.round(x + (((b >>> s) & 255) - x) * k); };
+    return ((255 << 24) | (m(16) << 16) | (m(8) << 8) | m(0)) >>> 0;
+  }
+  // True where an ordered (4x4 Bayer) dither of coverage k puts the second colour.
+  const dith = (x, y, k) => k > BAYER[((y & 3) << 2) | (x & 3)];
+
+  function pixelKit(c) {
+    function buffer(w, h) {
+      // willReadFrequently keeps the small canvas in memory: putImageData on a GPU-backed
+      // offscreen canvas every frame stalls badly (about 4x slower in Chrome).
+      const cv = makeCanvas(w, h), x = cv.getContext('2d', { willReadFrequently: true });
+      const img = x.createImageData(w, h), px = new Uint32Array(img.data.buffer);
+      const put = (X, Y, v, k) => { if (k >= 1 || dith(X, Y, k)) px[Y * w + X] = v; };
+      const b = {
+        w, h, px,
+        clear(col) { px.fill(pack(col)); },
+        copy(o) { px.set(o.px); },
+        get: (X, Y) => px[Y * w + X],
+        set(X, Y, col) { X = Math.round(X); Y = Math.round(Y); if (X >= 0 && Y >= 0 && X < w && Y < h) px[Y * w + X] = pack(col); },
+        // k < 1 dithers the colour over what is there, so k = 0.5 is a checkerboard.
+        rect(X, Y, rw, rh, col, k = 1) {
+          const v = pack(col), x0 = Math.max(0, Math.round(X)), y0 = Math.max(0, Math.round(Y));
+          const x1 = Math.min(w, Math.round(X + rw)), y1 = Math.min(h, Math.round(Y + rh));
+          for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) put(xx, yy, v, k);
+        },
+        // Banded vertical gradient: stops [[0, '#abc'], [1, '#def']], dithered only within `soft`
+        // (0..1) of each band edge, the way pixel artists draw skies.
+        vgrad(stops, y0 = 0, y1 = h, soft = 1, x0 = 0, x1 = w) {
+          const s = stops.map(([k, col]) => [k, pack(col)]);
+          for (let yy = Math.max(0, y0); yy < Math.min(h, y1); yy++) {
+            const f = (yy - y0) / Math.max(1, y1 - y0 - 1);
+            let i = 0; while (i < s.length - 2 && f > s[i + 1][0]) i++;
+            const [ka, ca] = s[i], [kb, cb] = s[Math.min(i + 1, s.length - 1)];
+            let k = kb > ka ? (f - ka) / (kb - ka) : 0;
+            k = Math.max(0, Math.min(1, (k - 0.5) / Math.max(0.01, soft) + 0.5));
+            for (let xx = Math.max(0, x0); xx < Math.min(w, x1); xx++) px[yy * w + xx] = dith(xx, yy, k) ? cb : ca;
+          }
+        },
+        // Per-pixel painter for baking: fn(x, y, current) returns a colour, or nothing to keep the pixel.
+        paint(x0, y0, x1, y1, fn) {
+          for (let yy = Math.max(0, y0 | 0); yy < Math.min(h, y1); yy++) for (let xx = Math.max(0, x0 | 0); xx < Math.min(w, x1); xx++) {
+            const v = fn(xx, yy, px[yy * w + xx]); if (v !== undefined && v !== null) px[yy * w + xx] = pack(v);
+          }
+        },
+        span(Y, xa, xb, col, k = 1) {
+          Y = Math.round(Y); if (Y < 0 || Y >= h) return;
+          const v = pack(col); for (let xx = Math.max(0, Math.round(xa)); xx < Math.min(w, Math.round(xb)); xx++) put(xx, Y, v, k);
+        },
+        // Filled polygon from flat [x, y, ...] points (even-odd scanline fill, no anti-aliasing).
+        poly(pts, col, k = 1) {
+          let ya = Infinity, yb = -Infinity; const n = pts.length / 2;
+          for (let i = 1; i < pts.length; i += 2) { ya = Math.min(ya, pts[i]); yb = Math.max(yb, pts[i]); }
+          const xs = [];
+          for (let yy = Math.max(0, Math.floor(ya)); yy <= Math.min(h - 1, Math.ceil(yb)); yy++) {
+            const sy = yy + 0.5; xs.length = 0;
+            for (let i = 0, j = n - 1; i < n; j = i++) {
+              const xi = pts[i * 2], yi = pts[i * 2 + 1], xj = pts[j * 2], yj = pts[j * 2 + 1];
+              if ((yi > sy) !== (yj > sy)) xs.push(xi + ((sy - yi) / (yj - yi)) * (xj - xi));
+            }
+            xs.sort((p, q) => p - q);
+            for (let i = 0; i + 1 < xs.length; i += 2) b.span(yy, xs[i], xs[i + 1], col, k);
+          }
+        },
+        disc(cx, cy, r, col, k = 1, ry = r) {
+          for (let yy = Math.ceil(cy - ry - 1); yy <= cy + ry; yy++) {
+            const dy = (yy + 0.5 - cy) / ry; if (dy * dy > 1) continue;
+            const hw = r * Math.sqrt(1 - dy * dy); b.span(yy, cx - hw, cx + hw, col, k);
+          }
+        },
+        line(x0, y0, x1, y1, col) {
+          x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+          const v = pack(col), dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+          let e = dx + dy;
+          for (let i = 0; i < 2000; i++) {
+            if (x0 >= 0 && y0 >= 0 && x0 < w && y0 < h) px[y0 * w + x0] = v;
+            if (x0 === x1 && y0 === y1) break;
+            const e2 = 2 * e; if (e2 >= dy) { e += dy; x0 += sx; } if (e2 <= dx) { e += dx; y0 += sy; }
+          }
+        },
+        // Hand-drawn sprite: rows of characters, pal maps a character to a colour; others are see-through.
+        sprite(rows, pal, X, Y, flip = false) {
+          X = Math.round(X); Y = Math.round(Y);
+          for (let r = 0; r < rows.length; r++) {
+            const row = rows[r], yy = Y + r; if (yy < 0 || yy >= h) continue;
+            for (let i = 0; i < row.length; i++) {
+              const col = pal[row[i]]; if (col === undefined) continue;
+              const xx = X + (flip ? row.length - 1 - i : i); if (xx >= 0 && xx < w) px[yy * w + xx] = pack(col);
+            }
+          }
+        },
+        // Pool of light: tints towards col by up to a, falling off over an ellipse, in `steps`
+        // dithered levels rather than a smooth gradient.
+        light(cx, cy, rx, ry, col, a = 0.5, steps = 4, x0 = 0, x1 = w, y1 = h) {
+          const v = pack(col);
+          for (let yy = Math.max(0, Math.floor(cy - ry)); yy < Math.min(y1, cy + ry); yy++) for (let xx = Math.max(x0, Math.floor(cx - rx)); xx < Math.min(x1, cx + rx); xx++) {
+            const dx = (xx + 0.5 - cx) / rx, dy = (yy + 0.5 - cy) / ry, d = dx * dx + dy * dy; if (d >= 1) continue;
+            const m = a * (1 - Math.sqrt(d)) ** 2, q = Math.floor(m * steps + BAYER[((yy & 3) << 2) | (xx & 3)]) / steps;
+            if (q > 0) px[yy * w + xx] = mixPacked(px[yy * w + xx], v, Math.min(1, q));
+          }
+        },
+        // Copy a horizontal band from another buffer, shifted by dx and wrapping round.
+        band(o, sy, dy, rows, dx = 0) {
+          for (let r = 0; r < rows; r++) {
+            const ys = sy + r, yd = dy + r; if (ys < 0 || ys >= o.h || yd < 0 || yd >= h) continue;
+            const s0 = ys * o.w, d0 = yd * w, n = Math.min(w, o.w);
+            for (let xx = 0; xx < n; xx++) px[d0 + xx] = o.px[s0 + ((((xx + dx) % o.w) + o.w) % o.w)];
+          }
+        },
+        // Scale the buffer up to cover (x, y, dw, dh) in the 960x540 space, keeping pixels crisp.
+        show(X = 0, Y = 0, dw = W, dh = H) {
+          x.putImageData(img, 0, 0);
+          c.save(); c.imageSmoothingEnabled = false; c.drawImage(cv, X, Y, dw, dh); c.restore();
+        },
+      };
+      return b;
+    }
+    // Seeded random numbers, so a scene looks the same every time it is shown.
+    function rng(seed) {
+      let s = seedOf(seed) || 1;
+      const r = () => { s = (s + 0x6d2b79f5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+      r.range = (a, b) => a + r() * (b - a);
+      r.int = (a, b) => Math.floor(a + r() * (b - a + 1));
+      r.pick = arr => arr[Math.floor(r() * arr.length)];
+      return r;
+    }
+    // Smooth value noise in [0, 1). period (in noise cells) makes it repeat across x.
+    function noise2(x, y, s = 0, period = 0) {
+      const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+      const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+      const wx = i => (period ? ((i % period) + period) % period : i);
+      const a = hash(wx(xi), yi, s), b = hash(wx(xi + 1), yi, s), cc = hash(wx(xi), yi + 1, s), d = hash(wx(xi + 1), yi + 1, s);
+      return a + (b - a) * u + (cc - a) * v + (a - b - cc + d) * u * v;
+    }
+    function fbm(x, y, oct = 4, s = 0, period = 0) {
+      let sum = 0, amp = 0.5, norm = 0;
+      for (let i = 0; i < oct; i++) { sum += amp * noise2(x, y, s + i * 31, period); norm += amp; x *= 2; y *= 2; period *= 2; amp *= 0.5; }
+      return sum / norm;
+    }
+    const mix = (a, b, k) => { const v = mixPacked(pack(a), pack(b), k); return '#' + [v & 255, (v >>> 8) & 255, (v >>> 16) & 255].map(n => n.toString(16).padStart(2, '0')).join(''); };
+    // blend: like mix, but on packed colours, for per-pixel work such as reflections.
+    return { buffer, rng, noise: noise2, fbm, dith, mix, pack, blend: (a, b, k) => mixPacked(pack(a), pack(b), k) };
+  }
+
   function select(ids, tags) {
     let list = registry.slice();
     if (ids && ids.length) list = ids.map(id => registry.find(s => s.id === id)).filter(Boolean);
@@ -374,6 +531,7 @@
     const g = helpers(c);
     const view = { scale: 1, offX: 0, offY: 0 };
     g.riso = risoKit(c, g, view);
+    g.pixel = pixelKit(c);
     const grain = makeGrain(c);
     const order = select(o.scenes, o.tags);
     if (o.shuffle) order.sort(() => Math.random() - 0.5);
